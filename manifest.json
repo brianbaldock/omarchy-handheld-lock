@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "id": "handheld.lock",
+  "name": "Handheld Lock",
+  "version": "1.0.0",
+  "author": "brianbaldock",
+  "license": "MIT",
+  "description": "Unlock Omarchy with an on-screen password keyboard or a fingerprint scan that only starts when you tap.",
+  "omarchy": {
+    "clonedFrom": "omarchy.lock",
+    "capabilities": [
+      "authentication"
+    ]
+  },
+  "kinds": [
+    "service"
+  ],
+  "keepLoaded": true,
+  "entryPoints": {
+    "service": "Service.qml"
+  }
+}
