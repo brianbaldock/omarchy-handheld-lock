@@ -2,6 +2,7 @@ NAME := omarchy-handheld-lock
 VERSION := $(shell jq -er .version manifest.json)
 ARCHIVE := $(NAME)-$(VERSION).tar.gz
 FILES := manifest.json Service.qml LockView.qml FingerprintPrompt.qml TouchKey.qml TouchKeyboard.qml README.md LICENSE Makefile
+FILES += preview.png docs/screenshots/unlock-options.png docs/screenshots/touch-keyboard.png docs/screenshots/fingerprint-prompt.png
 
 .PHONY: dist check
 .DELETE_ON_ERROR:

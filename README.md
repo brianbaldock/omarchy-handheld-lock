@@ -2,6 +2,10 @@
 
 Unlock an Omarchy handheld or tablet without attaching a keyboard. **Handheld Lock** adds a password keyboard directly to the secure lock screen and lets you start a fingerprint scan with a tap. It does not launch a desktop keyboard over the lock or leave the fingerprint reader continuously scanning.
 
+![Two ways to unlock: an on-screen keyboard for password entry, or a fingerprint prompt that waits for you to touch the sensor.](preview.png)
+
+Full-size screenshots: [Unlock options](docs/screenshots/unlock-options.png) · [Keyboard open](docs/screenshots/touch-keyboard.png) · [Fingerprint scan armed](docs/screenshots/fingerprint-prompt.png). These show the plugin UI on a demo background; the fingerprint prompt is simulated and no credentials were entered.
+
 This is an independent community plugin (`handheld.lock`) for the **session lock**. It does not change the login screen, disk-encryption prompt, idle timeout, or authentication for `sudo`. Omarchy Game Mode is not required.
 
 ## Requirements
