@@ -1,46 +1,81 @@
 # Handheld Lock
 
-A touch-friendly replacement for the Omarchy lock screen. Tap **Show keyboard** to type your password on the secure lock surface, or tap **Use fingerprint** to arm the reader for a single attempt. The reader stays idle until you ask for it. A miss or a 15-second timeout returns you to password entry; a device error pauses fingerprint attempts for 30 seconds. A physical keyboard continues to work.
+Unlock an Omarchy handheld or tablet without attaching a keyboard. **Handheld Lock** adds a password keyboard directly to the secure lock screen and lets you start a fingerprint scan with a tap. It does not launch a desktop keyboard over the lock or leave the fingerprint reader continuously scanning.
+
+This is an independent community plugin (`handheld.lock`) for the **session lock**. It does not change the login screen, disk-encryption prompt, idle timeout, or authentication for `sudo`. Omarchy Game Mode is not required.
 
 ## Requirements
 
-Tested with Omarchy 4.0.6, its Quickshell Wayland locker, and the existing `omarchy-lock-password` PAM service. Fingerprint unlock is optional and uses Omarchy's `omarchy-lock-fingerprint` PAM service, `fprintd`, a supported reader, and an enrolled fingerprint. The plugin does not configure PAM, enroll fingerprints, or require sudo. Neither Game Mode nor a separate desktop keyboard is required. The touch keyboard provides US letters, digits, spaces, and ASCII punctuation; use a physical keyboard for other characters.
+| Feature | What you need |
+| --- | --- |
+| Session lock and touch-password entry | Omarchy Quattro with the Quickshell Wayland locker and its working `omarchy-lock-password` PAM service. Tested on Omarchy **4.0.6**. |
+| Fingerprint unlock (optional) | A reader supported by `fprintd`/`libfprint`, a fingerprint enrolled for your account, and Omarchy's `omarchy-lock-fingerprint` PAM service. |
+| Build a release archive (optional) | `make`, `jq`, GNU `tar`, `sha256sum`, and the Omarchy plugin validator. No build step is required to install. |
+
+The plugin does not install drivers, edit PAM policies, export fingerprint templates, or enroll fingers. You can use the touch password keyboard without fingerprint hardware or an external on-screen keyboard.
 
 ## Install
 
-Plugins run inside the desktop shell as your user. Review the code before enabling it, especially because this one handles password input. **Switch lock plugins only while unlocked**, with a physical keyboard available for your first test.
+**Install and switch lockers only while unlocked.** Before the first test, confirm you know your account password and keep a physical keyboard available. Like other Omarchy plugins, this code runs unsandboxed inside the shell as your user. Because it handles password input, review the code before enabling it.
 
-From a committed local checkout, install without enabling:
+1. Add the public repository. Accept the clone prompt and answer **No** to enabling it immediately:
 
-```sh
-omarchy plugin validate .
-omarchy plugin add "$PWD" --yes
-```
+   ```sh
+   omarchy plugin add https://github.com/brianbaldock/omarchy-handheld-lock.git
+   ```
 
-For a published copy, use `omarchy plugin add` with the public Git repository URL instead. Choose **No** if asked whether to enable it immediately. If another third-party lock replacement is active, first switch back to the stock locker with `omarchy plugin enable omarchy.lock`. Then:
+2. If another third-party replacement is active, first run `omarchy plugin enable omarchy.lock` to restore the stock locker. Then enable Handheld Lock and check the service:
 
-```sh
-omarchy plugin enable handheld.lock
-omarchy shell lock status
-```
+   ```sh
+   omarchy plugin enable handheld.lock
+   omarchy shell lock status
+   ```
 
-Check that `passwordPam` is `true` before trying a lock. This replaces the built-in lock service; it does not change your idle timeout, login screen, or disk-encryption prompt.
+3. Before locking, check that the status reports `passwordPam: true`. If it does not, **do not test a lock**; restore the stock locker below. Otherwise use your normal lock action and try touch-password entry first. Test fingerprint unlock on a subsequent lock if configured.
+
+## Using the lock screen
+
+| Control | Behavior |
+| --- | --- |
+| **Show keyboard** | Opens the keyboard inside the lock surface. **Shift** capitalizes the next letter, **#+=** opens punctuation, **ABC** returns to letters, and **Enter** submits. **Hide keyboard** closes it. A physical keyboard still works. |
+| **Use fingerprint** or the fingerprint icon | Arms the reader for up to **15 seconds**. Touch the **physical sensor** when prompted. A match unlocks the session; tapping the icon alone never authenticates. |
+| **Cancel scan** or password entry | Cancels the scan and leaves password authentication available. A missed or expired scan does not rearm itself; tap **Try again** for another attempt. |
+| **Reader unavailable / cooling down** | Device errors pause fingerprint attempts for **30 seconds**. You can type the password immediately instead of waiting. |
+
+The embedded keyboard supports US letters, digits, spaces, and printable ASCII punctuation. If your password contains other characters, keep a keyboard with the appropriate layout available.
 
 ## Update and remove
 
-For a Git-managed installation, run `omarchy plugin update handheld.lock` while unlocked and review the diff. To restore the stock locker and then remove the plugin:
+While **unlocked**, run `omarchy plugin update handheld.lock` and review the diff before accepting. To roll back, restore the stock locker first:
 
 ```sh
 omarchy plugin enable omarchy.lock
 omarchy shell lock status
-omarchy plugin remove handheld.lock
 ```
 
-## Build and publish
+After confirming that the stock service responds and `passwordPam` is `true`, run `omarchy plugin remove handheld.lock` if you also want to uninstall it. No PAM or driver changes need to be undone.
 
-QML is loaded directly: installation needs no compilation or install hook. `make dist` validates the plugin and produces a versioned source archive and SHA-256 checksum in `dist/`.
+## Troubleshooting
 
-For a [marketplace listing](https://plugins.omarchy.org/publish.html), publish **one plugin per public GitHub repository**, with `manifest.json`, `README.md`, and `LICENSE` at its root. The plugin ID `handheld.lock` is intended to be permanent. Submit the repository root URL through the [official issue form](https://github.com/omacom/omarchy-plugin-marketplace/issues/new?template=submit-plugin.yml). Suggested category: **System**; tags: **Quickshell**, **Security**. A preview is optional. The marketplace checks the submitted commit and a maintainer approves the listing; this is not a security audit.
+- **No fingerprint button:** Check `omarchy shell lock status`. The `fingerprint` flag indicates that the fingerprint PAM configuration file is available, **not** that the sensor is healthy or that enrollment was verified. Complete Omarchy's fingerprint setup separately if you want to use it.
+- **A scan fails or times out:** Use the password, then check `fprintd-list "$USER"` in your unlocked graphical session. For reader errors, inspect `journalctl -b -u fprintd.service`. A generic error may not distinguish an unplugged reader from a driver cooldown.
+- **No Show keyboard button:** Run `omarchy plugin list` while unlocked and confirm `handheld.lock` is enabled. The desktop bar's keyboard toggle is not used. If you are at the boot or login prompt, this session plugin is not running there.
+- **Reporting an issue:** Include the Omarchy and plugin versions, which control you tapped, and any relevant error text. Do not post passwords, fingerprint data, or unredacted authentication logs.
+
+## Build and verify a release
+
+The repository is the installable plugin: `manifest.json` and the QML files live at its root. For development or offline inspection:
+
+```sh
+git clone https://github.com/brianbaldock/omarchy-handheld-lock.git
+cd omarchy-handheld-lock
+make dist
+(cd dist && sha256sum -c omarchy-handheld-lock-*.tar.gz.sha256)
+```
+
+`make dist` runs `omarchy plugin validate .` and writes a versioned source archive and checksum to `dist/`. To inspect a specific published version, see [GitHub Releases](https://github.com/brianbaldock/omarchy-handheld-lock/releases). There is no executable install hook and installation needs no sudo.
+
+For maintainers, the [marketplace submission guide](https://github.com/omacom/omarchy-plugin-marketplace/blob/HEAD/SUBMISSION.md) describes listing and re-verifying releases. Marketplace approval is not a security audit.
 
 ## Credits and license
 
